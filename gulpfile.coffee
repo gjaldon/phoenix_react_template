@@ -17,7 +17,7 @@ paths =
   index_js: ['./frontend/app/initialize.cjsx']
   js: ['frontend/app/**/*.cjsx', 'frontend/app/**/*.coffee']
   build: ['./build/**/*']
-  images: ['frontend/assets/images']
+  images: ['frontend/images']
 
 
 ## Tasks
