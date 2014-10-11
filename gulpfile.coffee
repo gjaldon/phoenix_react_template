@@ -6,9 +6,10 @@ source          = require 'vinyl-source-stream'
 del             = require 'del'
 tiny_lr         = require 'tiny-lr'
 express         = require 'express'
+sass            = require 'gulp-sass'
 
 paths =
-  css: ['frontend/css/**/*.sass']
+  sass: ['frontend/sass/**/*.sass']
   index_js: ['./frontend/app/initialize.cjsx']
   js: ['frontend/app/**/*.cjsx', 'frontend/app/**/*.coffee']
   build: ['./build/**/*']
@@ -19,15 +20,31 @@ paths =
 gulp.task 'clean', (cb) ->
   del ['build'], cb
 
+gulp.task 'copy', ['clean'], ->
+  gulp.src(['frontend/*.html']).pipe(gulp.dest('./build'))
+
 gulp.task 'js', ->
   browserify paths.index_js, extensions: ['.cjsx']
   .transform coffeereactify
   .bundle()
   .pipe source('app.js')
+  .pipe if gulp.env.production then rev() else gutil.noop()
   .pipe gulp.dest('./build/')
+
+gulp.task 'css', ->
+  gulp.src(paths.sass).pipe(sass
+    errLogToConsole: true
+    sourceComments : 'normal'
+  )
+  .pipe if gulp.env.production then minifyCSS() else gutil.noop()
+  .pipe if gulp.env.production then rev() else gutil.noop()
+  .pipe gulp.dest('./build')
 
 gulp.task 'watch', ->
   servers = createServers(8080, 35729)
+  gulp.watch paths.sass, (e) ->
+    gutil.log(gutil.colors.cyan(e.path), 'changed')
+    gulp.run 'css'
   gulp.watch paths.js, (e) ->
     gutil.log(gutil.colors.cyan(e.path), 'changed')
     gulp.run 'js'
@@ -37,8 +54,8 @@ gulp.task 'watch', ->
       body:
         files: [e.path]
 
-gulp.task 'default', ['clean'], ->
-  gulp.start 'js'
+gulp.task 'default', ['copy', 'js', 'css'], ->
+  gulp.start 'watch'
 
 
 ## Helpers
